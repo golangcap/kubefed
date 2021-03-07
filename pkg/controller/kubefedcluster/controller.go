@@ -114,6 +114,7 @@ func newClusterController(config *util.ControllerConfig, clusterHealthCheckConfi
 	cc.eventRecorder = recorder
 
 	var err error
+	// 监听KubeFedCluster Object事件, 对其增删改查
 	_, cc.clusterController, err = util.NewGenericInformerWithEventHandler(
 		config.KubeConfig,
 		config.KubeFedNamespace,
@@ -146,6 +147,7 @@ func newClusterController(config *util.ControllerConfig, clusterHealthCheckConfi
 				cc.mu.Lock()
 				clusterData, ok := cc.clusterDataMap[cluster.Name]
 
+				// 不存在该cluster或者spec,annotations, labels 有不想等的时候设置集群变更
 				if !ok || !equality.Semantic.DeepEqual(clusterData.cachedObj.Spec, cluster.Spec) ||
 					!equality.Semantic.DeepEqual(clusterData.cachedObj.ObjectMeta.Annotations, cluster.ObjectMeta.Annotations) ||
 					!equality.Semantic.DeepEqual(clusterData.cachedObj.ObjectMeta.Labels, cluster.ObjectMeta.Labels) {
@@ -156,6 +158,7 @@ func newClusterController(config *util.ControllerConfig, clusterHealthCheckConfi
 				if !clusterChanged {
 					return
 				}
+				// 删除-添加
 				cc.delFromClusterSet(cluster)
 				cc.addToClusterSet(cluster)
 			},
@@ -189,6 +192,7 @@ func (cc *ClusterController) addToClusterSet(obj *fedv1b1.KubeFedCluster) {
 		cc.RecordError(obj, "MalformedClusterConfig", errors.Wrap(err, "The configuration for this cluster may be malformed"))
 		return
 	}
+	// Note: cachedObj 创建Cluster Object的一个DeepCopy
 	cc.clusterDataMap[obj.Name] = &ClusterData{clusterKubeClient: restClient, cachedObj: obj.DeepCopy()}
 }
 

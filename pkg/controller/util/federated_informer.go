@@ -179,6 +179,7 @@ func NewFederatedInformer(
 	}
 
 	var err error
+	// 创建Informer监听KubeFedCluster对象
 	federatedInformer.clusterInformer.store, federatedInformer.clusterInformer.controller, err = NewGenericInformerWithEventHandler(
 		config.KubeConfig,
 		config.KubeFedNamespace,
@@ -192,6 +193,7 @@ func NewFederatedInformer(
 					if clusterLifecycle.ClusterUnavailable != nil {
 						data = getClusterData(oldCluster.Name)
 					}
+					// 删除cluster 并设置KubeFed Cluster状态为Unavailable
 					federatedInformer.deleteCluster(oldCluster)
 					if clusterLifecycle.ClusterUnavailable != nil {
 						clusterLifecycle.ClusterUnavailable(oldCluster, data)
@@ -199,6 +201,7 @@ func NewFederatedInformer(
 				}
 			},
 			AddFunc: func(cur interface{}) {
+				// 仅添加Ready的Cluster，然后标记KubeFedCluster状态为可用
 				curCluster, ok := cur.(*fedv1b1.KubeFedCluster)
 				switch {
 				case !ok:
@@ -214,6 +217,7 @@ func NewFederatedInformer(
 				}
 			},
 			UpdateFunc: func(old, cur interface{}) {
+				// 变更cluster，对比old和cur的状态、相关信息
 				oldCluster, ok := old.(*fedv1b1.KubeFedCluster)
 				if !ok {
 					klog.Errorf("Internal error: Cluster %v not updated. Old cluster not of correct type.", old)
@@ -330,10 +334,12 @@ func (f *federatedInformerImpl) GetClientForCluster(clusterName string) (generic
 	if client, ok := f.clusterClients[clusterName]; ok {
 		return client, nil
 	}
+	// 根据clusterName获取cluster config
 	config, err := f.getConfigForClusterUnlocked(clusterName)
 	if err != nil {
 		return nil, errors.Wrap(err, "Client creation failed")
 	}
+	// generic.New 使用的是client-go中client.New的方法
 	client, err := generic.New(config)
 	if err != nil {
 		return client, err
@@ -346,6 +352,7 @@ func (f *federatedInformerImpl) GetClientForCluster(clusterName string) (generic
 func (f *federatedInformerImpl) getConfigForClusterUnlocked(clusterName string) (*restclient.Config, error) {
 	// No locking needed. Will happen in f.GetCluster.
 	klog.V(4).Infof("Getting config for cluster %q", clusterName)
+	// 从就绪的Cluster Cache Store中获取KubeFed Cluster, 通过configFactory构建出*restclient.Config
 	if cluster, found, err := f.getReadyClusterUnlocked(clusterName); found && err == nil {
 		return f.configFactory(cluster)
 	} else if err != nil {
@@ -408,6 +415,7 @@ func (f *federatedInformerImpl) GetReadyCluster(name string) (*fedv1b1.KubeFedCl
 	return f.getReadyClusterUnlocked(name)
 }
 
+// 根据cluster Name从informer cache中获取Ready状态的KubeFedCluster
 func (f *federatedInformerImpl) getReadyClusterUnlocked(name string) (*fedv1b1.KubeFedCluster, bool, error) {
 	key := fmt.Sprintf("%s/%s", f.fedNamespace, name)
 	if obj, exist, err := f.clusterInformer.store.GetByKey(key); exist && err == nil {

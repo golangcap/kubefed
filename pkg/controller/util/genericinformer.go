@@ -37,6 +37,7 @@ func NewGenericInformer(config *rest.Config, namespace string, obj pkgruntime.Ob
 	return NewGenericInformerWithEventHandler(config, namespace, obj, resyncPeriod, NewTriggerOnAllChanges(triggerFunc))
 }
 
+// NewGenericInformer 使用resourceEventHandlerFuncs为Object单独创建一个Informer
 func NewGenericInformerWithEventHandler(config *rest.Config, namespace string, obj pkgruntime.Object, resyncPeriod time.Duration, resourceEventHandlerFuncs *cache.ResourceEventHandlerFuncs) (cache.Store, cache.Controller, error) {
 	gvk, err := apiutil.GVKForObject(obj, scheme.Scheme)
 	if err != nil {
