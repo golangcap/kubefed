@@ -57,7 +57,7 @@ LDFLAG_OPTIONS = -ldflags "-X sigs.k8s.io/kubefed/pkg/version.version=$(GIT_VERS
                       -X sigs.k8s.io/kubefed/pkg/version.buildDate=$(BUILDDATE)"
 
 export GOPATH ?= $(shell go env GOPATH)
-GO_BUILDCMD = CGO_ENABLED=0 go build $(VERBOSE_FLAG) $(LDFLAG_OPTIONS)
+GO_BUILDCMD = CGO_ENABLED=0 GOPROXY=https://goproxy.cn go build $(VERBOSE_FLAG) $(LDFLAG_OPTIONS)
 
 TESTARGS ?= $(VERBOSE_FLAG) -timeout 60s
 TEST_PKGS ?= $(GOTARGET)/cmd/... $(GOTARGET)/pkg/...

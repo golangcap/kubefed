@@ -14,7 +14,7 @@
 
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+#RUN apk update && apk add ca-certificates
 RUN adduser -D -g hyperfed -u 1001 hyperfed
 
 RUN mkdir -p /hyperfed
